@@ -1,0 +1,48 @@
+version: "3.1"
+services:
+  webserver:
+    image: nginx:alpine
+    container_name: ${PROJECT_NAME}-webserver
+    working_dir: /application
+    networks:
+      - internal
+    volumes:
+      - ./../:/application
+      - ./sourcefiles/nginx:/etc/nginx/conf.d
+    ports:
+      - "${NGINX_PORT}:80"
+
+  php-fpm:
+    build: sourcefiles/php-fpm
+    container_name: ${PROJECT_NAME}-php-fpm
+
+    working_dir: /application
+    environment:
+      - PHP_WORKER_INSTALL_BCMATH=true
+    volumes:
+      - ./../:/application
+      - ./sourcefiles/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
+    networks:
+      - internal
+  mysql:
+      image: mysql:8.0
+      container_name: ${PROJECT_NAME}-mysql
+      restart: unless-stopped
+      environment:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: laravel
+          MYSQL_PASSWORD: secret
+      ports:
+          - "3306:3306"
+      volumes:
+          - mysql-data:/var/lib/mysql
+      networks:
+          - internal
+
+volumes:
+  mysql-data:
+    driver: local
+networks:
+  internal:
+    driver: bridge
